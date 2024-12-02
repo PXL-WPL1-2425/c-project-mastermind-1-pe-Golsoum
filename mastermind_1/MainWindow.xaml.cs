@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -8,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace mastermind_1
 {
@@ -16,33 +18,75 @@ namespace mastermind_1
     /// </summary>
     public partial class MainWindow : Window
     {
+        DispatcherTimer timer = new DispatcherTimer();
+        int timeRemaining = 10; 
+        int attempts = 1;
         string[] chosenColor = new string[4];
-        int counter = 1;
         string[] allColors = { "white", "green", "blue", "red", "orange", "yellow" };
         
         public MainWindow()
         {
+            
             InitializeComponent();
-            Random rnd = new Random();
-
-            for (int i = 1; i > 1; i++ )
+            this.KeyDown += (s, e) =>
             {
+                if (e.Key == Key.F12 && Keyboard.Modifiers == ModifierKeys.Control)
+                {
+                    ToggleDebug();
+                }
+            };
 
-                counter += counter;
-            }
-            Mastermind.Title = $"Poging {counter}" ;
- 
-            for (int i = 0; i< 4; i++)
+            timer.Tick += Timer_Tick;
+                timer.Interval = new TimeSpan(0, 0, 1);
+
+            GenerateCode();
+
+
+
+            codeTextBox.Text = $"{string.Join(", ", chosenColor)}";
+            FillComboBoxes(ref allColors);
+            
+        }
+        
+        private void GenerateCode()
+        {
+
+            Random rnd = new Random();
+            for (int i = 0; i < 4; i++)
             {
                 int color = rnd.Next(allColors.Length);
                 chosenColor[i] = allColors[color];
-
-
             }
-            FillComboBoxes(ref allColors);
+
+            StartCountDown(); 
+        }
+        //stop countdown timer 
+        private void StopCountDown()
+        {
+            timer.Stop();
+
+        }
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            timeRemaining--;
+            timerLabel.Content = $"Tijd: {timeRemaining}";
            
-           
-            
+            if (timeRemaining <= 0)
+            {
+                StopCountDown(); 
+                HandleAttempt(); 
+            }
+        }
+        //start countdown timer from 10 seconds and if the player click "check code" start new attempts
+        private void StartCountDown()
+        {
+            timeRemaining = 10; 
+            timer.Start(); 
+          
+        }
+        private void UpdateTimerLabel()
+        {
+            timerLabel.Content = $"Tijd: {timeRemaining}";
         }
         private void ChoosingLabelColors(object sender, RoutedEventArgs e)
         {
@@ -78,6 +122,20 @@ namespace mastermind_1
             }
 
         }
+        private void HandleAttempt()
+        {
+            
+           
+            if (attempts > 10) 
+            {
+                
+                StopCountDown(); 
+                return;
+            }
+            attempts++;
+            Mastermind.Title = $"Poging {attempts}";
+            StartCountDown(); 
+        }
         private void FillComboBoxes(ref string[] items)
         {
             foreach (var item in items)
@@ -89,6 +147,20 @@ namespace mastermind_1
             }
 
           
+        }
+        //make the textbox visible or unvisible by pressing ctrl F12
+        private void ToggleDebug()
+        {
+          
+            if(codeTextBox.Visibility == Visibility.Hidden)
+            {
+                codeTextBox.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                codeTextBox.Visibility = Visibility.Hidden;
+
+            }
         }
 
 
@@ -117,6 +189,10 @@ namespace mastermind_1
         }
         private void controlButton_Click(object sender, RoutedEventArgs e)
         {
+            HandleAttempt();
+
+
+
             string[] userPickedColors =  {
                                  firstComboBox.SelectedItem.ToString(),
                                  secondComboBox.SelectedItem.ToString(),
